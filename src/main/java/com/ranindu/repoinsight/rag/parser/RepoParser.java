@@ -19,9 +19,16 @@ public class RepoParser {
         if (files == null) return contents;
 
         for (File file : files) {
+            String name = file.getName();
+
             if (file.isDirectory()) {
                 contents.addAll(readJavaFiles(file.getAbsolutePath()));
-            } else if (file.getName().endsWith(".java")) {
+            } else if (name.endsWith(".java") ||
+                    name.endsWith(".js") ||
+                    name.endsWith(".jsx") ||
+                    name.endsWith(".ts") ||
+                    name.endsWith(".tsx")) {
+
                 try {
                     String content = Files.readString(file.toPath());
                     contents.add(content);
