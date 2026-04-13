@@ -1,5 +1,6 @@
 package com.ranindu.repoinsight.controller;
 
+import com.ranindu.repoinsight.rag.chunker.CodeChunker;
 import com.ranindu.repoinsight.rag.parser.RepoParser;
 import com.ranindu.repoinsight.service.EmbeddingService;
 import com.ranindu.repoinsight.service.LlmService;
@@ -16,11 +17,13 @@ public class ChatController {
     private final LlmService llmService;
     private final EmbeddingService embeddingService;
     private final RepoParser repoParser;
+    private final CodeChunker codeChunker;
 
-    public ChatController(LlmService llmService, EmbeddingService embeddingService, RepoParser repoParser) {
+    public ChatController(LlmService llmService, EmbeddingService embeddingService, RepoParser repoParser, CodeChunker codeChunker) {
         this.llmService = llmService;
         this.embeddingService = embeddingService;
         this.repoParser = repoParser;
+        this.codeChunker = codeChunker;
     }
 
     @GetMapping
@@ -35,8 +38,21 @@ public class ChatController {
 
     @GetMapping("/read")
     public int readrepo(){
-        List<String> files = repoParser.readJavaFiles("/Users/raninduamarasinghe/Desktop/TPC");
+        List<String> files = repoParser.readCodeFiles("/Users/raninduamarasinghe/Desktop/TPC");
                 return files.size();
     }
+
+    @GetMapping("/chunk")
+    public int chunkRepo(){
+        List<String> files = repoParser.readCodeFiles("/Users/raninduamarasinghe/Desktop/TPC");
+
+        int totalChunk = 0;
+        for (String file : files) {
+            List<String> chunks = codeChunker.chunkByLines(file);
+            totalChunk += chunks.size();
+        }
+        return totalChunk;
+    }
+
 }
 
