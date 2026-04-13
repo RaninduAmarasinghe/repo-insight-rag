@@ -2,12 +2,10 @@ package com.ranindu.repoinsight.controller;
 
 import com.ranindu.repoinsight.rag.chunker.CodeChunker;
 import com.ranindu.repoinsight.rag.parser.RepoParser;
+import com.ranindu.repoinsight.rag.vectro.VectorStore;
 import com.ranindu.repoinsight.service.EmbeddingService;
 import com.ranindu.repoinsight.service.LlmService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -18,12 +16,14 @@ public class ChatController {
     private final EmbeddingService embeddingService;
     private final RepoParser repoParser;
     private final CodeChunker codeChunker;
+    private final VectorStore vectorStore;
 
-    public ChatController(LlmService llmService, EmbeddingService embeddingService, RepoParser repoParser, CodeChunker codeChunker) {
+    public ChatController(LlmService llmService, EmbeddingService embeddingService, RepoParser repoParser, CodeChunker codeChunker, VectorStore vectorStore) {
         this.llmService = llmService;
         this.embeddingService = embeddingService;
         this.repoParser = repoParser;
         this.codeChunker = codeChunker;
+        this.vectorStore = vectorStore;
     }
 
     @GetMapping
@@ -54,5 +54,32 @@ public class ChatController {
         return totalChunk;
     }
 
+    @PostMapping("/index")
+    public String indexRepo(){
+        List<String> files = repoParser.readCodeFiles("/Users/raninduamarasinghe/Desktop/TPC");
+
+        int count = 0;
+        int limit = 100;
+
+        for (String file : files) {
+            List<String> chunks = codeChunker.chunkByLines(file);
+
+            for (String chunk : chunks){
+                if(count ++ > limit) break;
+
+                if (chunk.length() > 2000) continue;
+
+                try {
+                    List<Double> embedding = embeddingService.getEmbedding(chunk);
+                    vectorStore.add(embedding,chunk);
+
+                    Thread.sleep(100);
+                } catch (Exception e) {
+                    System.out.println("Skipped chunk due to error");
+                }
+            }
+        }
+        return "Indexed" + count + "chunks";
+        }
 }
 
