@@ -2,6 +2,7 @@ package com.ranindu.repoinsight.controller;
 
 import com.ranindu.repoinsight.rag.chunker.CodeChunker;
 import com.ranindu.repoinsight.rag.parser.RepoParser;
+import com.ranindu.repoinsight.rag.service.RagService;
 import com.ranindu.repoinsight.rag.vectro.VectorStore;
 import com.ranindu.repoinsight.service.EmbeddingService;
 import com.ranindu.repoinsight.service.LlmService;
@@ -14,16 +15,12 @@ import java.util.List;
 public class ChatController {
     private final LlmService llmService;
     private final EmbeddingService embeddingService;
-    private final RepoParser repoParser;
-    private final CodeChunker codeChunker;
-    private final VectorStore vectorStore;
+    private final RagService ragService;
 
-    public ChatController(LlmService llmService, EmbeddingService embeddingService, RepoParser repoParser, CodeChunker codeChunker, VectorStore vectorStore) {
+    public ChatController(LlmService llmService, EmbeddingService embeddingService, RagService ragService) {
         this.llmService = llmService;
         this.embeddingService = embeddingService;
-        this.repoParser = repoParser;
-        this.codeChunker = codeChunker;
-        this.vectorStore = vectorStore;
+        this.ragService = ragService;
     }
 
     @GetMapping
@@ -37,49 +34,23 @@ public class ChatController {
     }
 
     @GetMapping("/read")
-    public int readrepo(){
-        List<String> files = repoParser.readCodeFiles("/Users/raninduamarasinghe/Desktop/TPC");
-                return files.size();
+    public int readRepo() {
+        return ragService.countFiles("/Users/raninduamarasinghe/Desktop/npcverse-ai");
     }
 
     @GetMapping("/chunk")
-    public int chunkRepo(){
-        List<String> files = repoParser.readCodeFiles("/Users/raninduamarasinghe/Desktop/TPC");
-
-        int totalChunk = 0;
-        for (String file : files) {
-            List<String> chunks = codeChunker.chunkByLines(file);
-            totalChunk += chunks.size();
-        }
-        return totalChunk;
+    public int chunkRepo() {
+        return ragService.countChunks("/Users/raninduamarasinghe/Desktop/npcverse-ai");
     }
 
     @PostMapping("/index")
-    public String indexRepo(){
-        List<String> files = repoParser.readCodeFiles("/Users/raninduamarasinghe/Desktop/TPC");
+    public String indexRepo() {
+        return ragService.indexRepo("/Users/raninduamarasinghe/Desktop/npcverse-ai");
+    }
 
-        int count = 0;
-        int limit = 100;
-
-        for (String file : files) {
-            List<String> chunks = codeChunker.chunkByLines(file);
-
-            for (String chunk : chunks){
-                if(count ++ > limit) break;
-
-                if (chunk.length() > 2000) continue;
-
-                try {
-                    List<Double> embedding = embeddingService.getEmbedding(chunk);
-                    vectorStore.add(embedding,chunk);
-
-                    Thread.sleep(100);
-                } catch (Exception e) {
-                    System.out.println("Skipped chunk due to error");
-                }
-            }
-        }
-        return "Indexed" + count + "chunks";
-        }
+    @GetMapping("/ask")
+    public String ask(@RequestParam String question) {
+        return ragService.askQuestion(question);
+    }
 }
 

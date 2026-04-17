@@ -4,7 +4,7 @@ import java.util.List;
 
 public class SimilarityUtil {
 
-    public static double cosinSimilarity(List<Double> a, List<Double> b) {
+    public static double cosineSimilarity(List<Double> a, List<Double> b) {
         double dot = 0.0;
         double normA = 0.0;
         double normB = 0.0;
